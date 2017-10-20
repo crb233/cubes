@@ -1,10 +1,13 @@
 
+# Face numbers are assigned as follows:
 #   0
 # 1 2 3 4
 #   5
 
-# for each face, a list of adjacent faces and their relative orientations
-orientations = [
+opposites = [5, 3, 4, 1, 2, 0]
+
+# contains lists of data values for use in turning each side
+turns = [
     [(4,0), (3,0), (2,0), (1,0)],
     [(4,1), (0,3), (2,3), (5,3)],
     [(5,0), (1,1), (0,2), (3,3)],
@@ -13,7 +16,17 @@ orientations = [
     [(1,2), (2,2), (3,2), (4,2)],
 ]
 
-def rotate(face, rot):
+# contains lists of data values for use in rotating around each side
+rotations = [
+    [(0,1), (2,0), (3,0), (4,0), (1,0), (5,3)],
+    [(4,2), (1,1), (0,0), (3,3), (5,2), (2,0)],
+    [(1,1), (5,1), (2,1), (0,1), (4,3), (3,1)],
+    [(2,0), (1,3), (5,0), (3,1), (0,2), (4,2)],
+    [(3,3), (0,3), (2,3), (5,3), (4,1), (1,3)],
+    [(0,3), (4,0), (1,0), (2,0), (3,0), (5,1)],
+]
+
+def rotate_face(face, rot):
     n = len(face)
     m = n - 1
     
@@ -57,28 +70,36 @@ def set_rotated_edge(face, rot, vals):
             face[m - c][0] = vals[c]
 
 class Cube:
-    def __init__(self, n):
+    def __init__(self, n=3, colors=False):
         self.n = n
+        if colors:
+            # TODO use the colorama library for colors
+            self.labels = ['  ','  ','  ','  ','  ','  ']
+        else:
+            self.labels = ['0 ','1 ','2 ','3 ','4 ','5 ']
         self.reset()
+    
+    def __repr__(self):
+        return self.__str__()
     
     def __str__(self):
         res = ''
         for i in range(self.n):
             res += '      '
             for j in range(self.n):
-                res += str(self.faces[0][i][j]) + ' '
+                res += self.labels[self.faces[0][i][j]]
             res += '\n'
         
         for i in range(self.n):
             for f in range(1,5):
                 for j in range(self.n):
-                    res += str(self.faces[f][i][j]) + ' '
+                    res += self.labels[self.faces[f][i][j]]
             res += '\n'
         
         for i in range(self.n):
             res += '      '
             for j in range(self.n):
-                res += str(self.faces[5][i][j]) + ' '
+                res += self.labels[self.faces[5][i][j]]
             res += '\n'
         
         return res[:-1]
@@ -86,15 +107,19 @@ class Cube:
     def reset(self):
         self.faces = [[[i for c in range(self.n)] for r in range(self.n)] for i in range(6)]
     
-    def turn(self, face, x):
-        ls = orientations[face]
+    def turn(self, face, x=1):
+        ls = turns[face]
         
-        self.faces[face] = rotate(self.faces[face], x)
+        self.faces[face] = rotate_face(self.faces[face], x % 4)
         edges = [get_rotated_edge(self.faces[f], r) for f, r in ls]
         for i in range(4):
             f, r = ls[(i + x) % 4]
             set_rotated_edge(self.faces[f], r, edges[i])
     
-    def turns(self, ls):
-        for face, x in ls:
-            self.turn(face, x)
+    def rotate(self, face, x=1):
+        x = x % 4
+        if x == 3:
+            face = opposites[face]
+        ls = rotations[face]
+        for i in range(x):
+            self.faces = [rotate_face(self.faces[f], r) for f, r in ls]
