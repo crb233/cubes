@@ -90,6 +90,16 @@ def set_edge(face, x, vals):
         for c in range(n):
             face[c][m] = vals[c]
 
+def normalize_history(hist):
+    '''Return a modified history such that the resulting cube is the same, but
+    no rotations are used'''
+    pass
+
+def invert_moves(vals):
+    res = []
+    for f, x in reversed(vals):
+        res.append((f, x if x == 0 else 4 - x))
+    return res
 
 class Cube:
     '''Represents a 3-dimensional n by n Rubik's cube'''
@@ -118,6 +128,8 @@ class Cube:
         '''Determines if the face values of two cubes are exactly the same in
         their current orientation. Will return False for cubes which are in
         different orientations but are otherwise the same.'''
+        
+        # TODO smarter equality checks
         
         for f in range(6):
             for r in range(self.n):
@@ -179,7 +191,6 @@ class Cube:
     def moves(self, vals):
         if isinstance(vals, str):
             for tup in map(parse_move, vals.split()):
-                print(tup)
                 if tup is not None:
                     self.move(tup[0], tup[1])
         else:
@@ -191,17 +202,21 @@ class Cube:
         
         self.history.append(('rotate', face, x))
         
+        new_faces = [None] * 6
+        
         # rotate selected and opposite faces
         opp = OPPOSITES[face]
-        self.faces[face] = rotate_face(self.faces[face], x)
-        self.faces[opp] = rotate_face(self.faces[opp], 4 - x)
+        new_faces[face] = rotate_face(self.faces[face], x)
+        new_faces[opp] = rotate_face(self.faces[opp], 4 - x)
         
         # rotate and move adjacent faces
         ls = ROTATIONS[face]
-        fs = [rotate_face(self.faces[f], r) for f, r in ls]
         for i in range(4):
-            f, r = ls[(i + x) % 4]
-            self.faces[f] = rotate_face(fs[i], 4 - r)
+            f0, r0 = ls[i]
+            f1, r1 = ls[(i + x) % 4]
+            new_faces[f1] = rotate_face(self.faces[f0], r0 - r1)
+        
+        self.faces = new_faces
     
     def run_history(self, hist):
         for typ, face, x in hist:
