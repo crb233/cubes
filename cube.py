@@ -36,6 +36,9 @@ def parse_move(string):
         return SIDES[string[0]], AMOUNTS[string[1]]
     return None
 
+def parse_moves(string):
+    return filter(lambda x: x is not None, map(parse_move, string.split()))
+
 def rotate_face(face, x):
     '''Returns a copy of the face with 'x' clockwise rotations.'''
     
@@ -190,12 +193,9 @@ class Cube:
     
     def moves(self, vals):
         if isinstance(vals, str):
-            for tup in map(parse_move, vals.split()):
-                if tup is not None:
-                    self.move(tup[0], tup[1])
-        else:
-            for face, x in vals:
-                self.move(face, x)
+            vals = parse_moves(vals)
+        for face, x in vals:
+            self.move(face, x)
     
     def rotate(self, face, x=1):
         '''Rotates the entire cube around a face, changing its orientation'''
@@ -233,3 +233,42 @@ class Cube:
                     if f[r][c] != val:
                         return False
         return True
+
+def main(args):
+    c = Cube()
+    print(c)
+    
+    hist = []
+    while 1:
+        inp = input(Fore.LIGHTMAGENTA_EX + 'm' + str(len(hist)) + Fore.RESET + '> ').strip()
+        if inp in ['q', 'exit', 'quit']:
+            break
+        elif inp in ['r', 'reset']:
+            c.reset()
+        else:
+            if inp.startswith(':'):
+                try:
+                    i = int(inp[1:])
+                    m = hist[i]
+                except Exception as err:
+                    print_err('Syntax error')
+                    continue
+            else:
+                m = parse_moves(inp)
+            
+            m = list(m)
+            if len(m) == 0:
+                print_err('Invalid moves')
+                continue
+            
+            hist.append(m)
+            c.moves(m)
+            print(c)
+    print("Goodbye")
+
+def print_err(msg):
+    print(Fore.LIGHTRED_EX + str(msg) + Fore.RESET)
+
+if __name__ == '__main__':
+    import sys
+    main(sys.argv[1:])
